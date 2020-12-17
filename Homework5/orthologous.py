@@ -1,28 +1,32 @@
-from Bio import Entrez, SeqIO, Blast
-import wget
-from os.path import exists
-import gzip
-from Bio.Blast.Applications import NcbiblastpCommandline
+from Bio import SeqIO
 from Bio.Blast import NCBIXML
+from Bio.Blast.Applications import NcbiblastpCommandline
+from os.path import exists
+import wget
+import gzip
 
 blast = '/usr/local/ncbi/blast/bin/blastp'
-name_cov = 'cov2.fasta.gz'
-name_hpv = 'hpv.fasta.gz'
+name_query = 'cov2.fasta.gz'
+name_subject = 'hpv.fasta.gz'
 url_hpv = 'http://eng1.mu.edu.tr/~tugba/Bioinformatics/hpv.fasta.gz'
 url_cov = 'http://eng1.mu.edu.tr/~tugba/Bioinformatics/cov2.fasta.gz'
 result = 'results.xml'
+format = 'fasta'
+mode = 'rt'
+literal_query = name_query.split('.')[0].upper()
+literal_subject = name_subject.split('.')[0].upper()
 
 if not exists(result):
-    if not exists(name_hpv):
-        print(name_hpv, 'file does not exists in path downloading...')
+    if not exists(name_subject):
+        print(name_subject, 'file does not exists in path downloading...')
         file_hpv = wget.download(url_hpv)
 
-    if not exists(name_cov):
-        print(name_cov, 'file does not exists in path downloading...')
+    if not exists(name_query):
+        print(name_query, 'file does not exists in path downloading...')
         file_cov = wget.download(url_cov)
 
-    cov2 = SeqIO.parse(gzip.open(name_cov, 'rt'), format="fasta")
-    hpv = SeqIO.parse(gzip.open(name_hpv, 'rt'), format="fasta")
+    cov2 = SeqIO.parse(gzip.open(name_query, mode), format=format)
+    hpv = SeqIO.parse(gzip.open(name_subject, mode), format=format)
     cmdline = NcbiblastpCommandline(cmd=blast, query=cov2, db=hpv, out=result)
     print(result, 'file does not exists in path re-generating...')
     stdout, stderr = cmdline()
@@ -35,8 +39,8 @@ else:
             for hsp in alignment.hsps:
                 if hsp.expect < 5e-3:
                     print()
-                    print('COV2 sequence:', blast_result.query)
-                    print('HPV sequence:', alignment.title)
-                    print('COV2 sequence:', hsp.query[0:78])
-                    print('HPV sequence:', hsp.sbjct[0:78])
+                    print(f'{literal_query} sequence:', blast_result.query)
+                    print(f'{literal_subject} sequence:', alignment.title)
+                    print(f'{literal_query} sequence:', hsp.query[0:78])
+                    print(f'{literal_subject} sequence:', hsp.sbjct[0:78])
                     # print(hsp.expect, hsp.score, hsp.positives, hsp.gaps)
